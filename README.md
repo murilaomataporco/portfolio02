@@ -2,67 +2,153 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfólio de Fotos</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f6f6f6;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+            padding: 32px;
+        }
+        h1 {
+            margin-bottom: 16px;
+            color: #333;
+        }
+        form {
+            margin-bottom: 24px;
+            display: flex;
+            gap: 12px;
+        }
+        input[type="file"] {
+            flex: 1;
+        }
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+        }
+        .photo-card {
+            background: #f5f5f5;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        .photo-card img {
+            width: 100%;
+            display: block;
+            object-fit: cover;
+            height: 180px;
+        }
+        .remove-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        @media (max-width: 500px) {
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <header>
+    <div class="container">
         <h1>Meu Portfólio de Fotos</h1>
-        <nav>
-            <ul>
-                <li><a href="#sobre">Sobre</a></li>
-                <li><a href="#galeria">Galeria</a></li>
-                <li><a href="#contato">Contato</a></li>
-            </ul>
-        </nav>
-    </header>
-    <section id="sobre">
-        <h2>Sobre Mim</h2>
-        <p>Olá! Eu sou um fotógrafo apaixonado por capturar momentos únicos. Confira minha galeria abaixo.</p>
-    </section>
-    <section id="galeria">
-        <h2>Galeria de Fotos</h2>
-        <div class="gallery">
-            <div class="photo">
-                <img src="https://source.unsplash.com/400x300/?nature" alt="Natureza">
-                <p>Natureza</p>
-            </div>
-            <div class="photo">
-                <img src="https://source.unsplash.com/400x300/?city" alt="Cidade">
-                <p>Cidade</p>
-            </div>
-            <div class="photo">
-                <img src="https://source.unsplash.com/400x300/?portrait" alt="Retrato">
-                <p>Retrato</p>
-            </div>
-            <div class="photo">
-                <img src="https://source.unsplash.com/400x300/?animals" alt="Animais">
-                <p>Animais</p>
-            </div>
-            <div class="photo">
-                <img src="https://source.unsplash.com/400x300/?travel" alt="Viagem">
-                <p>Viagem</p>
-            </div>
-            <div class="photo">
-                <img src="https://source.unsplash.com/400x300/?beach" alt="Praia">
-                <p>Praia</p>
-            </div>
-        </div>
-    </section>
-    <section id="contato">
-        <h2>Contato</h2>
-        <form id="formContato">
-            <input type="text" name="nome" placeholder="Seu nome" required>
-            <input type="email" name="email" placeholder="Seu email" required>
-            <textarea name="mensagem" placeholder="Sua mensagem" required></textarea>
-            <button type="submit">Enviar</button>
+        <form id="uploadForm">
+            <input type="file" id="photoInput" accept="image/*" multiple>
+            <button type="submit">Adicionar Fotos</button>
         </form>
-        <div id="msgEnviada" style="display:none;">Mensagem enviada! Obrigado pelo contato.</div>
-    </section>
-    <footer>
-        <p>&copy; 2025 Meu Portfólio de Fotos</p>
-    </footer>
-    <script src="script.js"></script>
+        <div class="gallery" id="gallery"></div>
+    </div>
+
+    <script>
+        // Carregar fotos do localStorage ao iniciar
+        function loadPhotos() {
+            const saved = localStorage.getItem('portfolio_photos');
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        // Salvar fotos no localStorage
+        function savePhotos(photos) {
+            localStorage.setItem('portfolio_photos', JSON.stringify(photos));
+        }
+
+        // Renderizar galeria de fotos
+        function renderGallery() {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+            const photos = loadPhotos();
+            photos.forEach((photo, idx) => {
+                const card = document.createElement('div');
+                card.className = 'photo-card';
+
+                const img = document.createElement('img');
+                img.src = photo;
+                img.alt = `Foto ${idx+1}`;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = '×';
+                removeBtn.className = 'remove-btn';
+                removeBtn.onclick = () => removePhoto(idx);
+
+                card.appendChild(img);
+                card.appendChild(removeBtn);
+                gallery.appendChild(card);
+            });
+        }
+
+        // Remover foto
+        function removePhoto(index) {
+            let photos = loadPhotos();
+            photos.splice(index, 1);
+            savePhotos(photos);
+            renderGallery();
+        }
+
+        // Adicionar fotos
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('photoInput');
+            const files = Array.from(input.files);
+            if (files.length === 0) return;
+
+            let photos = loadPhotos();
+            let pending = files.length;
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    photos.push(ev.target.result);
+                    pending--;
+                    if (pending === 0) {
+                        savePhotos(photos);
+                        renderGallery();
+                        input.value = "";
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // Inicializar
+        renderGallery();
+    </script>
 </body>
 </html>
